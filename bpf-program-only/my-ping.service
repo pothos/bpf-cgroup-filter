@@ -1,0 +1,8 @@
+[Unit]
+Description=my ping service
+Requires=cgroup-sock-drop-filter.service
+After=cgroup-sock-drop-filter.service
+
+[Service]
+ExecStart=ping 127.0.0.1
+IPIngressFilterPath=/sys/fs/bpf/cgroup-sock-drop-filter

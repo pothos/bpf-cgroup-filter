@@ -1,0 +1,3 @@
+bpf-program-only/cgroup-sock-drop.S
+bpf-program-only/cgroup-sock-drop.o
+standalone/load_and_control_filter

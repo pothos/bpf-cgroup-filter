@@ -1,0 +1,9 @@
+[Unit]
+Description=cgroup socket drop filter
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/kai/quellcode/GSoC/bpftests/bpftool prog load /home/kai/quellcode/GSoC/bpftests/cgroup-sock-drop.o /sys/fs/bpf/cgroup-sock-drop-filter type cgroup/skb
+ExecStop=rm /sys/fs/bpf/cgroup-sock-drop-filter
+LimitMEMLOCK=infinity
