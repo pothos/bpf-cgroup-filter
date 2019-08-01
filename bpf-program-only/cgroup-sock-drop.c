@@ -9,7 +9,7 @@
 __section("filter")
 int cgroup_socket_drop(struct __sk_buff *skb)
 {
-    /* analyse skb content here */
+    /* analyze skb content here */
     return 0; /* 0 = drop, 1 = forward */
 }
 

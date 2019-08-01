@@ -42,7 +42,7 @@ that loads a BPF filter and controls its behavior.
 
 _From the source code comment:_
 Loads a BPF cgroup ingress/egress filter bytecode that filters based on the packet size.
-It loads the BPF filter to a given location in /sys/fs/bpf/.
+It loads the BPF filter to a given location in `/sys/fs/bpf/`.
 Through the +/- keys the MTU can be changed interactively (changes values in the BPF map).
 Optionally the initial MTU value can be specified on startup.
 The program can also attach the BPF filter to a cgroup by specifying the cgroup by its path.
