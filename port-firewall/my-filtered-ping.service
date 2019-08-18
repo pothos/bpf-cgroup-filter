@@ -1,0 +1,10 @@
+[Unit]
+Description=my egress-filtered ping service
+Requires=bpf-make.service
+After=bpf-make.service
+
+[Service]
+ExecStart=ping 127.0.0.1
+IPEgressFilterPath=/sys/fs/bpf/port-firewall
+# If you don't have systemd v243 you can use this instead of the above line:
+# ExecStartPre=/path/to/bpftool cgroup attach /sys/fs/cgroup/unified/system.slice/my-ping.service egress pinned /sys/fs/bpf/port-firewall multi

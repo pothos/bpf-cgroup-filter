@@ -4,6 +4,30 @@ These are examples for my [blogpost about custom BPF firewalls for systemd servi
 that I implemented in [this commit](https://github.com/systemd/systemd/commit/fab347489fcfafbc8367c86afc637ce1b81ae59e).
 You can find more explanations and examples on how to use it when reading the blog post.
 
+## Update: Port-based BPF firewall compiled with clang
+
+The [port-firewall folder](port-firewall/) contains a
+small configurable packet filter that parses IP/IPv6 packets, ICMP, UDP ports,
+and TCP ports.
+The forward rule is a C expression passed as `FILTER` variable
+to the compiler with `-D`.
+
+The expression can use the boolean variables `udp`, `tcp`, `icmp`, `ip`, and `ipv6` denoting the packet type and the the integers `dst_port` and `src_port` for the UDP/TCP ports.
+If the expression evaluates to 0 (false), the packet will be dropped.
+Valid filters examples are `FILTER='icmp || (udp && dst_port == 53) || (tcp && dst_port == 80)'` or `FILTER='!udp || dst_port == 53'`.
+
+The makefile requires to pass the filter to build the program: `make FILTER='…'`.
+With `make load` the bytecode is loaded to `/sys/fs/bpf/port-firewall` as pinned BPF program in the special BPF filesystem.
+
+From there you can use it with the systemd options `IP(Ingress|Egress)FilterPath=` or attach
+it manually to a cgroup.
+
+The [folder](port-firewall/) also includes a `bpf-make.service` systemd unit file to configure and load the firewall
+and an example `my-filtered-ping.service` file that uses the loaded firewall.
+It includes an workaround you can use to not require systemd v243.
+
+The next section shows how to load and use a simple dropping filter as template for your own filters if you don't want to use this one.
+
 ## Simple dropping filter compiled with clang
 
 In the [bpf-program-only folder](bpf-program-only/) is a
@@ -15,8 +39,8 @@ This will load it with `bpftool` to
 
 You can use this to specify an `IPIngressFilterPath` or `IPEgressFilterPath`
 for systemd services (>= 243).
-Here an example with ping running as root in a temporary systemd scope (or service)
-with an ingress filter but no egress filter.
+Here an example with ping running in a temporary systemd system scope (or service)
+with an ingress filter but no egress filter. You can also use user scopes without `sudo` by passing `--user`.
 
 ```
 $ sudo systemd-run -p IPIngressFilterPath=/sys/fs/bpf/cgroup-sock-drop --scope ping 127.0.0.1
@@ -33,7 +57,28 @@ the `LimitMEMLOCK=infinity` entry in the unit that load the filter). When you wa
 it for your service to start at boot you need to add, e.g.,
 `After=network.target` and an `[Install]` section with `WantedBy=multi-user.target`.
 
-Until systemd 243 is released you can try the below program which has an option to attach the filter to a cgroup.
+Until systemd 243 is released you can also try the interactive MTU filter program from the next section below which has an option to attach the filter to a cgroup.
+
+### Workaround when systemd 243 is not available
+Use `systemd-run` to spawn a shell in a new cgroup either as system scope or user scope (a temporary service). `-S` can be replaced with a concrete binary if you don't want to start a shell.
+
+```
+$ sudo systemd-run --scope -S
+$ # or:
+$ systemd-run --user --scope -S
+Running scope as unit: run-r63de6b74621b4ae3877d4fa86b54be75.scope
+```
+
+This will print out the unit name which is also the name of the cgroup. The full cgroup path for the system service shell is `/sys/fs/cgroup/unified/system.slice/NAME`. For the user service shell the path is `/sys/fs/cgroup/unified/user.slice/user-1000.slice/user@1000.service/NAME` depening on your UID not being `1000`.
+
+Then attach the BPF program to the cgroup:
+
+```
+$ sudo $(which bpftool) cgroup attach /sys/fs/cgroup/unified/user.slice/user-1000.slice/user@1000.service/run-rfaa93ac79de2482d8ef1870fd6b508cd.scope egress pinned /sys/fs/bpf/cgroup-sock-drop multi
+```
+
+You can either choose `ingress` or `egress` to filter incoming or outgoing packets. You can load the same filter for both `ingress` and `egrees` and you can load multiple different filters per `ingress`/`egress` (which also true when used through the systemd v243 option above).
+If you turn on `IPAccounting` in `systemd-run` you need to turn on `Delegate` as well to allow multiple BPF programs.
 
 ## Interactive MTU filter
 
