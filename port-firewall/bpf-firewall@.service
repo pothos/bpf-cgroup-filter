@@ -1,11 +1,12 @@
 [Unit]
-Description=BPF port-firewall load service
+Description=BPF port-firewall load service template for filter: %I
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 # If bpftool is not installed system-wide use: Environment="PATH=/bin:/usr/bin:/path/to/bpftool-folder"
-Environment='FILTER=icmp || (udp && dst_port == 53) || (tcp && dst_port == 80)'
+Environment='FILTER=%I'
+Environment='BPFNAME=%i'
 ExecStart=/usr/bin/make -C /path/to/repo/bpf-cgroup-filter/port-firewall
-ExecStop=rm /sys/fs/bpf/port-firewall
+ExecStop=/usr/bin/make -C /path/to/repo/bpf-cgroup-filter/port-firewall remove
 LimitMEMLOCK=infinity

@@ -1,0 +1,26 @@
+[Unit]
+Description=my egress-filtered ping service template
+# To avoid specifying the FILTER here twice and below again,
+# this service file is a template and the FILTER has to be
+# passed as argument (referenced with %i) when instanciating
+# the service via `systemctl start "service-with-filter@FILTER.service"`
+Requires=bpf-firewall@%i.service
+After=bpf-firewall@%i.service
+# The alternative is to not use a template file and include the argument directly
+# here as bpf-firewall@ESCAPED.service with ESCAPED being the output
+# of `systemd-escape "FILTER"`.
+# Then you can make this file here a regular service file without the @.
+
+[Service]
+ExecStart=ping 127.0.0.1
+IPEgressFilterPath=/sys/fs/bpf/%i
+
+# If you don't have systemd v243 you can use this instead of the above line:
+# ExecStartPre=/path/to/bpftool cgroup attach /sys/fs/cgroup/unified/system.slice/system-service\x5cx2dwith\x5cx2dfilter.slice/%n egress pinned /sys/fs/bpf/%i multi
+# Cannot use %p here but have to use 'my\x5cx2dping\x5cx2dwith\x5cx2dfilter' (encoded twice with systemd-escape) because the cgroup fs slice path name still has the escaping and if we use the escaping here once it is reverted once and thus removed when the unit is loaded.
+
+# Again, if this file is not a template, instead of %i use
+# IPEgressFilterPath=/sys/fs/bpf/ESCAPED
+# Without systemd v243 it would become
+# ExecStartPre=/path/to/bpftool cgroup attach /sys/fs/cgroup/unified/system.slice/%n egress pinned /sys/fs/bpf/ESCAPEDTWICE multi
+# with ESCAPEDTWICE being the output of `systemd-escape "ESCAPED"`.

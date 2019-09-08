@@ -26,6 +26,15 @@ The [folder](port-firewall/) also includes a `bpf-make.service` systemd unit fil
 and an example `my-filtered-ping.service` file that uses the loaded firewall.
 It includes an workaround you can use to not require systemd v243.
 
+Instead of making a custom loader unit for every service you can also use the systemd unit template
+`bpf-firewall@.service` by as done in the `service-with-filter@.service` file.
+This is also a unit template used through `systemctl start "service-with-filter@icmp || (udp && dst_port == 53).service"`
+but it can also be a regular service without the `@`. The disadvantage is that you have to specify the filter more than
+once it the file but the advantage is that it's you don't use templates unnecessary and don't have the filter as (ugly)
+part of the service name.
+Ideally I would store the filter in a BPF map so that it can be set after BPF program loading, allowing it to be
+a simple `ExecStartPre` line in the service file.
+
 The next section shows how to load and use a simple dropping filter as template for your own filters if you don't want to use this one.
 
 ## Simple dropping filter compiled with clang
