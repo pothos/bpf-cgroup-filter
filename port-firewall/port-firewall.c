@@ -7,6 +7,10 @@
  * [udp, tcp, icmp, ip, ipv6] and the integers [dst_port, src_port].
  * If the expression evaluates to 0 (false), the packet will be dropped.
  */
+
+ /* Workaround for "/usr/include/gnu/stubs.h:7:11: fatal error: 'gnu/stubs-32.h' file not found" */
+#define __x86_64__
+
 #include <linux/bpf.h>
 #include "bpf_api.h"
 #include <linux/in.h>
